@@ -1,54 +1,5 @@
-# Entorno virtual
-venv/
-.env/
-.venv/
-env/
-ENV/
-
-# Archivos de configuración local
-*.env
-*.ini
-*.cfg
-*.local
-config.json
-
-# Archivos de credenciales o tokens
-token.txt
-apikey.txt
-secret.json
-
-# Archivos de logs
-*.log
-logs/
-debug.log
-
-# Archivos compilados de Python
 __pycache__/
 *.py[cod]
-*$py.class
-
-# Archivos temporales o de caché
-*.tmp
-*.temp
-*.bak
-*.swp
-.cache/
-*.DS_Store
-
-# Archivos de IDEs
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
-
-# Archivos de dependencias
-*.egg-info/
-dist/
-build/
-
-# Archivos de Docker (si los usás)
-*.pid
-*.sock
-
-# Otros posibles directorios
-node_modules/
+.env
+*.env
+venv/
