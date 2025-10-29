@@ -48,7 +48,7 @@ def manejar_mensaje(message):
 
     print("💬 Historial de chat:\n", historial_texto)
     prompt = f"""
-    Sos el asistente virtual de la barbería *Don Facu* 💈.
+    Sos el asistente virtual de la barbería *Tucson* 💈.
     Gestionás turnos para cortes de pelo masculinos.
     📅 Turnos ya reservados: {turnos_reservados}.
     🕗 Horario laboral: de 08:00 a 16:00 (cada 30 minutos).
