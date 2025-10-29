@@ -1,25 +1,17 @@
 import telebot
 import logging
 import google.generativeai as genai
-import re, json
+import re
 from datetime import datetime, time
 import config
-
+from controllers import getShifts, createShift
 
 bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
 genai.configure(api_key=config.GEMINI_API_KEY)
 model = genai.GenerativeModel("gemini-2.0-flash-lite")
 logging.basicConfig(level=logging.INFO)
 
-# --- FUNCIÓN AUXILIAR ---
-def guardar_turno_bd(nombre, dia, hora):
-    print(f"💾 Guardando en BD -> Cliente: {nombre}, Día: {dia}, Hora: {hora}")
-
-# --- DATOS SIMULADOS ---
-turnos_reservados = [
-    {"dia": "2025-10-28", "hora": "10:00", "cliente": "Juan"},
-    {"dia": "2025-10-29", "hora": "09:30", "cliente": "Pedro"},
-]
+turnos_reservados = getShifts()
 
 def turno_ocupado(dia, hora):
     """Devuelve True si el turno ya está tomado."""
@@ -32,24 +24,44 @@ def horario_valido(hora):
         return time(8, 0) <= hora_dt <= time(16, 0)
     except:
         return False
-
+historial_chat = {}
+hoy = datetime.today().strftime("%Y-%m-%d")
 # --- HANDLER GEMINI ---
 @bot.message_handler(func=lambda msg: True)
 def manejar_mensaje(message):
     cliente = message.from_user.first_name or "Cliente"
+    chat_id = message.chat.id
+    
+    if chat_id not in historial_chat:
+        historial_chat[chat_id] = []
 
+    historial_chat[chat_id].append({"rol": "usuario", "mensaje": message.text})
+
+    historial_texto = ""
+    for entry in historial_chat[chat_id]:
+        rol = entry["rol"]
+        msg = entry["mensaje"]
+        if rol == "usuario":
+            historial_texto += f"Cliente: {msg}\n"
+        else:
+            historial_texto += f"Asistente: {msg}\n"
+
+    print("💬 Historial de chat:\n", historial_texto)
     prompt = f"""
     Sos el asistente virtual de la barbería *Don Facu* 💈.
     Gestionás turnos para cortes de pelo masculinos.
-
     📅 Turnos ya reservados: {turnos_reservados}.
     🕗 Horario laboral: de 08:00 a 16:00 (cada 30 minutos).
-    El cliente se llama {cliente} y escribió: "{message.text}".
+    📆 Fecha actual: {hoy}
+    Cliente: {cliente}
+    Historial de chat:
+    {historial_texto}
 
     Tu tarea:
+    - Responde de manera coherente y continua la conversación con el cliente.
     - Si el cliente pide un turno (día y hora), verificá que:
-      1. El horario esté dentro del rango laboral.
-      2. No esté ocupado para ese día.
+    1. El horario esté dentro del rango laboral.
+    2. No esté ocupado para ese día.
     - Si todo está correcto, devolvé una respuesta amable confirmando el turno
     y al final incluí este bloque de texto, en formato claro:
         ACCION: reservar
@@ -61,11 +73,13 @@ def manejar_mensaje(message):
     - Si el mensaje no tiene que ver con reservar turnos, respondé normalmente.
     """
 
+
     respuesta = model.generate_content(prompt)
     texto = respuesta.text or "No entendí bien, ¿podés repetirlo?"
     logging.info(f"Gemini respondió: {texto}")
 
-    
+    historial_chat[chat_id].append({"rol": "asistente", "mensaje": texto})
+
     match = re.search(
     r"ACCION:\s*(.+)\nNOMBRE:\s*(.+)\nDIA:\s*(\d{4}-\d{2}-\d{2})\nHORA:\s*(\d{2}:\d{2})",
     texto,
@@ -91,7 +105,7 @@ def manejar_mensaje(message):
                 return
 
             # Guardar y confirmar
-            guardar_turno_bd(nombre, dia, hora)
+            createShift(nombre,chat_id, dia, hora)
             bot.send_message(
                 message.chat.id,
                 f"💈 Turno reservado para *{nombre}* el *{dia}* a las *{hora}* ✅",
