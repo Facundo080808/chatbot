@@ -3,7 +3,7 @@ import logging
 import google.generativeai as genai
 import re
 from datetime import datetime, time
-import config
+import config as config
 from controllers import getShifts, createShift
 
 bot = telebot.TeleBot(config.TELEGRAM_TOKEN)
@@ -48,7 +48,7 @@ def manejar_mensaje(message):
 
     print("💬 Historial de chat:\n", historial_texto)
     prompt = f"""
-    Sos el asistente virtual de la barbería *Don Facu* 💈.
+    Sos el asistente virtual de la barbería *Tucson* 💈.
     Gestionás turnos para cortes de pelo masculinos.
     📅 Turnos ya reservados: {turnos_reservados}.
     🕗 Horario laboral: de 08:00 a 16:00 (cada 30 minutos).
@@ -57,6 +57,10 @@ def manejar_mensaje(message):
     Historial de chat:
     {historial_texto}
 
+    PRECIOS Y SERVICIOS:
+    - Cualquier corte de pelo: $6000
+    - Corte + barba: $8000
+    - Barba sola: $2000
     Tu tarea:
     - Responde de manera coherente y continua la conversación con el cliente.
     - Si el cliente pide un turno (día y hora), verificá que:
@@ -111,6 +115,8 @@ def manejar_mensaje(message):
                 f"💈 Turno reservado para *{nombre}* el *{dia}* a las *{hora}* ✅",
                 parse_mode="Markdown"
             )
+            historial_chat[chat_id].clear() 
+            
             return
 
     bot.send_message(message.chat.id, texto)
